@@ -1,5 +1,6 @@
 extern crate clap;
 use clap::{Arg, App};
+use std::path::PathBuf;
 
 static PROGRAM_NAME : &str = "bckpcln";
 static PROGRAM_VERSION : &str = "1.0";
@@ -8,10 +9,46 @@ fn main() {
     let app = App::new(PROGRAM_NAME)
         .version(PROGRAM_VERSION)
         .author("rodolphe saugier <rodolphe.saugier@gmail.com>")
-        .about("BaCKuP CLeaNer. Removes old backups from a directory containing many.")
+        .about("bckpcln is a BaCKuP CLeaNer. \n\
+        Removes backup files from a directory containing many in order to keep the directory size \
+        under a given threshold. \n\
+        Older backups have a higher probability to be deleted, but we try \
+        to keep old ones too. \n\
+        NOTE: sub-folders are unsupported.")
         .arg(Arg::with_name("directory")
              .short("d")
              .long("directory")
-             .takes_value(true));
+             .value_name("BACKUP_DIR")
+             .help("The directory to process. Default is current working directory."))
+        .arg(Arg::with_name("max-size")
+             .short("m")
+             .long("max-size")
+             .value_name("MAX_SIZE_IN_GB")
+             .help("Defines the maximum accepted size of the backup folder in gigabytes (accepts decimal value with . as a decimal separator)")
+             .takes_value(true))
+        .arg(Arg::with_name("force")
+             .short("f")
+             .long("force")
+             .help("Forces the deletion without prompting")
+             .takes_value(false))
+        .arg(Arg::with_name("dry-run")
+             .long("dry-run")
+             .help("Do not delete anything, just show what would be deleted"));
     let args = app.get_matches();
+
+    let backup_directory_path : PathBuf;
+    match args.value_of("directory") {
+        Some(path) => {
+            backup_directory_path = PathBuf::from(path);
+        },
+        None => {
+            backup_directory_path = std::env::current_dir().unwrap();
+        }
+    }
+
+    let max_size = args.value_of("max-size").expect("max size is required");
+
+
+    println!("Target backup directory: {}", backup_directory_path.to_string_lossy());
+    println!("Max size: {} GB", max_size);
 }
