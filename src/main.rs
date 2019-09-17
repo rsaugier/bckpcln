@@ -55,7 +55,7 @@ fn main() {
     println!("Target backup directory: {}", backup_directory_path.to_string_lossy());
     println!("Max size: {} GB", max_size);
 
-    let backupsFolder = backups::readBackupsFolder(backup_directory_path.as_path());
+    let backupsFolder = BackupsFolder::read(backup_directory_path.as_path());
     match backupsFolder {
         Ok(result) => {
             println!("{}", result);
