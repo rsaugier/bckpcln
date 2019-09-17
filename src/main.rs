@@ -1,6 +1,10 @@
 extern crate clap;
 use clap::{Arg, App};
 use std::path::PathBuf;
+use crate::backups::BackupsFolder;
+
+mod backups;
+
 
 static PROGRAM_NAME : &str = "bckpcln";
 static PROGRAM_VERSION : &str = "1.0";
@@ -48,7 +52,16 @@ fn main() {
 
     let max_size = args.value_of("max-size").expect("max size is required");
 
-
     println!("Target backup directory: {}", backup_directory_path.to_string_lossy());
     println!("Max size: {} GB", max_size);
+
+    let backupsFolder = backups::readBackupsFolder(backup_directory_path.as_path());
+    match backupsFolder {
+        Ok(result) => {
+            println!("{}", result);
+        },
+        Err(error) => {
+            eprintln!("{}", error);
+        }
+    }
 }
