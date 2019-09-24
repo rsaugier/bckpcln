@@ -6,6 +6,7 @@ use std::cmp::{Ordering, Reverse};
 use chrono;
 use chrono::{DateTime, Utc, Local, TimeZone, ParseError, Duration};
 
+
 pub type Result<T> = std::result::Result<T, Box<dyn error::Error>>;
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Clone)]
@@ -46,7 +47,7 @@ impl BackupsFolder {
             let entry = entry?;
             if entry.file_type()?.is_dir() {
                 let path = entry.path();
-                let creation_date = creation_date_from_filename(path.file_name().unwrap())?;
+                let creation_date = creation_date_from_filename(&path)?;
                 let backup_total_size = directory_total_size(path.as_os_str())?;
                 total_files_size += backup_total_size;
                 let backup = Backup::new(creation_date, path, backup_total_size);
@@ -108,8 +109,12 @@ fn update_isolations(backups : &mut Vec<Backup>) {
     }
 }
 
-fn creation_date_from_filename(filename : &OsStr) -> Result<DateTime<Utc>> {
-    Ok(Utc.datetime_from_str(&filename.to_string_lossy(), "%F_%H%M_%S")?)
+fn creation_date_from_filename(path : &PathBuf) -> Result<DateTime<Utc>> {
+    let filename = path.file_name().unwrap();
+    match Utc.datetime_from_str(&filename.to_string_lossy(), "%F_%H%M_%S") {
+        Ok(date) => return Ok(date),
+        Err(e) => simple_error::bail!("cannot parse date from this file name: {}", path.to_string_lossy())
+    }
 }
 
 fn directory_total_size(path : &OsStr) -> Result<u64> {
