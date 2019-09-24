@@ -53,15 +53,23 @@ fn main() {
     let max_size = args.value_of("max-size").expect("max size is required");
 
     println!("Target backup directory: {}", backup_directory_path.to_string_lossy());
-    println!("Max size: {} GB", max_size);
 
-    let backupsFolder = BackupsFolder::read(backup_directory_path.as_path());
-    match backupsFolder {
-        Ok(result) => {
-            println!("{}", result);
+    println!("Max size: {} GiB", max_size);
+
+    match BackupsFolder::read(backup_directory_path.as_path()) {
+        Ok(backupsFolder) => {
+            process(&backupsFolder);
         },
         Err(error) => {
-            eprintln!("{}", error);
+            eprintln!("ERROR: {}", error);
         }
+    }
+}
+
+fn process(backupsFolder : &BackupsFolder) {
+    println!("Cumulated size of all backup files: {}", backups::human_size(backupsFolder.total_files_size));
+    println!("Backup cleanup order:");
+    for backup in backupsFolder.iter_backups_in_deletion_order() {
+        println!("{}", backup);
     }
 }
