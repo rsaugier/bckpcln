@@ -5,7 +5,7 @@ use std::ffi::OsStr;
 use std::cmp::{Ordering, Reverse};
 use chrono;
 use chrono::{DateTime, Utc, Local, TimeZone, ParseError, Duration};
-
+use crate::human_size::*;
 
 pub type Result<T> = std::result::Result<T, Box<dyn error::Error>>;
 
@@ -19,6 +19,7 @@ pub struct Backup {
     pub isolation : Duration
 }
 
+#[derive(Clone)]
 pub struct BackupsFolder {
     pub path : PathBuf,
     pub backups : Vec<Backup>,
@@ -54,7 +55,6 @@ impl BackupsFolder {
                 backups.push(backup);
             }
         }
-        backups.sort();
         update_isolations(&mut backups);
         Ok(BackupsFolder {
             path : PathBuf::from(folder),
@@ -63,25 +63,37 @@ impl BackupsFolder {
         })
     }
 
+    fn pop_best_candidate_for_deletion(&mut self) -> Option<Backup> {
+        self.backups.sort_by(|x, y| x.isolation.cmp(&y.isolation).reverse().then(x.date.cmp(&y.date).reverse()));
+        match self.backups.pop() {
+            Some(x) => {
+                update_isolations(&mut self.backups);
+                Some(x)
+            },
+            None => None
+        }
+    }
+
     pub fn iter_backups_in_deletion_order(&self) -> DeletionOrderBackupIterator {
-        let mut sorted_backups = self.backups.to_vec();
-        sorted_backups.sort_by_key(|x| Reverse(x.isolation));
         DeletionOrderBackupIterator {
-            remaining_backups : sorted_backups
+            remaining_backups : self.clone()
         }
     }
 
 }
 
 pub struct DeletionOrderBackupIterator {
-    remaining_backups : Vec<Backup>
+    remaining_backups : BackupsFolder
 }
 
 impl Iterator for DeletionOrderBackupIterator {
-    type Item = Backup;
+    type Item = (Backup, BackupsFolder);
 
-    fn next(&mut self) -> Option<Self::Item> {
-        return self.remaining_backups.pop();
+    fn next(&mut self) -> Option<(Backup, BackupsFolder)> {
+        match self.remaining_backups.pop_best_candidate_for_deletion() {
+            Some(best_candidate) => Some((best_candidate, self.remaining_backups.clone())),
+            None => None
+        }
     }
 }
 
@@ -103,6 +115,7 @@ fn compute_isolations(backups : &Vec<Backup>) -> Vec<Duration> {
 }
 
 fn update_isolations(backups : &mut Vec<Backup>) {
+    backups.sort();
     let isolations = compute_isolations(backups);
     for pair in backups.iter_mut().zip(isolations.iter()) {
         pair.0.isolation = *pair.1;
@@ -151,30 +164,15 @@ impl Display for Backup {
                    self.isolation.num_minutes() % 60,
                    self.isolation.num_seconds() % 60);
         }
-        write!(f, " size={}", human_size(self.size));
+        write!(f, " size={}", self.size.human_size());
         Ok(())
-    }
-}
-
-pub fn human_size(size: u64) -> String {
-    if size < 1024 {
-        return format!("{} bytes", size);
-    }
-    else if size < 1024 * 1024 {
-        return format!("{} KiB", size / 1024);
-    }
-    else if size < 1024 * 1024 * 1024 {
-        return format!("{} MiB", size / (1024 * 1024));
-    }
-    else {
-        return format!("{} GiB", size / (1024 * 1024 * 1024));
     }
 }
 
 impl Display for BackupsFolder {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> std::result::Result<(), Error> {
-        writeln!(f, "BackupsFolder: \"{}\" [", self.path.display());
+        writeln!(f, "\"{}\" [", self.path.display());
         for backup in self.backups.iter() {
             writeln!(f, "    {}", backup);
         }

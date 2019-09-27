@@ -10,3 +10,10 @@ edition = "2018"
 clap = "*"
 chrono = "*"
 simple-error = "*"
+
+[profile.release]
+opt-level = 'z'  # Optimize for size.
+lto = true
+codegen-units = 1
+panic = 'abort'     # Abort on panic
+
