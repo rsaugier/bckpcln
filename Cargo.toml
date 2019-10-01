@@ -10,6 +10,8 @@ edition = "2018"
 clap = "*"
 chrono = "*"
 simple-error = "*"
+regex = "*"
+lazy_static = "*"
 
 [profile.release]
 opt-level = 'z'  # Optimize for size.

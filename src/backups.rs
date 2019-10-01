@@ -164,7 +164,7 @@ impl Display for Backup {
                    self.isolation.num_minutes() % 60,
                    self.isolation.num_seconds() % 60);
         }
-        write!(f, " size={}", self.size.human_size());
+        write!(f, " size={}", self.size.to_human_size());
         Ok(())
     }
 }

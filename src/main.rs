@@ -1,4 +1,8 @@
 extern crate clap;
+#[macro_use]
+extern crate lazy_static;
+extern crate regex;
+
 use clap::{Arg, App};
 use std::path::{PathBuf, Path};
 use std::str::FromStr;
@@ -34,9 +38,9 @@ fn main() {
         .arg(Arg::with_name("max-size")
              .short("m")
              .long("max-size")
-             .value_name("MAX_SIZE_IN_GB")
+             .value_name("MAX_SIZE")
              .required(true)
-             .help("Defines the maximum accepted size of the backup folder in gigabytes (accepts decimal value with . as a decimal separator)")
+             .help("Defines the maximum accepted size of the backup folder. Supports standard units. Examples: 5k, 10M, 6G")
              .takes_value(true))
         .arg(Arg::with_name("force")
              .short("f")
@@ -75,7 +79,7 @@ fn main() {
     }
 
     let max_size = args.value_of("max-size").expect("max size is required");
-    let max_size = u64::from_str(max_size).expect("invalid max size format") * (1024 * 1024 * 1024);
+    let max_size = u64::from_human_size(max_size).expect("invalid max size format");
     let must_delete = args.is_present("delete");
     let must_move = args.is_present("move");
     let must_list = args.is_present("list");
@@ -95,7 +99,7 @@ fn main() {
 
     println!("Backup directory to clean up: {}", backup_directory_path.to_string_lossy());
 
-    println!("Max size: {}", max_size.human_size());
+    println!("Max size: {}", max_size.to_human_size());
     println!("Perform delete: {}", if must_delete { "Yes!" } else { "No, just explain" });
 
     match BackupsFolder::read(backup_directory_path.as_path()) {
@@ -112,7 +116,7 @@ fn main() {
 }
 
 fn process(backupsFolder : &BackupsFolder, max_size : u64, action : Action, target_dir : Option<&str>, verbose : bool) {
-    println!("Cumulated size of all backup files: {}", backupsFolder.total_files_size.human_size());
+    println!("Cumulated size of all backup files: {}", backupsFolder.total_files_size.to_human_size());
 
     if backupsFolder.total_files_size < max_size {
         println!("Cumulated backups size is lower than the max size - nothing to do");
@@ -124,7 +128,7 @@ fn process(backupsFolder : &BackupsFolder, max_size : u64, action : Action, targ
         for iteration in backupsFolder.iter_backups_in_deletion_order() {
             let (candidate, new_folder_state) = iteration;
             let path = String::from(candidate.path.to_string_lossy());
-            let size = String::from(candidate.size.human_size());
+            let size = String::from(candidate.size.to_human_size());
              match action {
                  Action::Explain => {
                      println!("Deleting (or moving) \"{}\" would free {}", path, size);
@@ -145,7 +149,7 @@ fn process(backupsFolder : &BackupsFolder, max_size : u64, action : Action, targ
             }
             new_size -= candidate.size;
             if new_size <= max_size {
-                println!("New cumulated size of all backup files : {}", new_size.human_size());
+                println!("New cumulated size of all backup files : {}", new_size.to_human_size());
                 break;
             }
         }
