@@ -6,6 +6,7 @@ A small tool to delete oldest and less isolated backups from a directory.
 ####Use case:
 
 You store backups in a directory.
+Your backups are *not* incremental, but full backups. 
 The backup files are stored in subdirectories, that are named using a pattern that indicates the date of the backup files inside.
 The precise content of each subdirectory is not important.
 
@@ -32,7 +33,6 @@ backups_folder
 .
 ```
   
-The backup files are *not* incremental. 
 
 They accumulate with time, and you want to clean the less useful ones from time to time to save disk space.
 
