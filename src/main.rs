@@ -138,7 +138,7 @@ fn process(backups_folder : &BackupsFolder, max_size : u64, action : Action, tar
                              println!("Deleted \"{}\" to free {}", &path, size);
                          }
                          Err(e) => {
-                             eprintln!("Deletion of \"{}\" failed, ERROR = ", e);
+                             eprintln!("Deletion of \"{}\" failed, ERROR : {}", &path, e);
                          }
                      }
                  },
