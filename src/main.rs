@@ -139,6 +139,7 @@ fn process(backups_folder : &BackupsFolder, max_size : u64, action : Action, tar
                          }
                          Err(e) => {
                              eprintln!("Deletion of \"{}\" failed, ERROR : {}", &path, e);
+
                          }
                      }
                  },
