@@ -4,17 +4,14 @@ extern crate lazy_static;
 extern crate regex;
 
 use clap::{Arg, App};
-use std::path::{PathBuf, Path};
+use std::path::PathBuf;
 use std::str::FromStr;
-use std::cmp::max;
 
 mod backups;
 mod human_size;
 
 use crate::backups::BackupsFolder;
 use crate::human_size::*;
-use crate::Action::Explain;
-use std::ffi::OsStr;
 
 static PROGRAM_NAME : &str = "bckpcln";
 static PROGRAM_VERSION : &str = "1.0";
@@ -103,11 +100,11 @@ fn main() {
     println!("Perform delete: {}", if must_delete { "Yes!" } else { "No, just explain" });
 
     match BackupsFolder::read(backup_directory_path.as_path()) {
-        Ok(backupsFolder) => {
+        Ok(backups_folder) => {
             if must_list {
-                println!("Backups folder: {}", backupsFolder)
+                println!("Backups folder: {}", backups_folder)
             }
-            process(&backupsFolder, max_size, action, target_folder, verbose);
+            process(&backups_folder, max_size, action, target_folder, verbose);
         },
         Err(error) => {
             eprintln!("ERROR: {}", error);
@@ -115,27 +112,35 @@ fn main() {
     }
 }
 
-fn process(backupsFolder : &BackupsFolder, max_size : u64, action : Action, target_dir : Option<&str>, verbose : bool) {
-    println!("Cumulated size of all backup files: {}", backupsFolder.total_files_size.to_human_size());
+fn process(backups_folder : &BackupsFolder, max_size : u64, action : Action, target_dir : Option<&str>, verbose : bool) {
+    println!("Cumulated size of all backup files: {}", backups_folder.total_files_size.to_human_size());
 
-    if backupsFolder.total_files_size < max_size {
+    if backups_folder.total_files_size < max_size {
         println!("Cumulated backups size is lower than the max size - nothing to do");
     }
     else {
-        let mut new_size = backupsFolder.total_files_size;
+        let mut new_size = backups_folder.total_files_size;
         println!("Cumulated backups size is higher than the max size - cleanup is needed!");
 
-        for iteration in backupsFolder.iter_backups_in_deletion_order() {
+        for iteration in backups_folder.iter_backups_in_deletion_order() {
             let (candidate, new_folder_state) = iteration;
             let path = String::from(candidate.path.to_string_lossy());
             let size = String::from(candidate.size.to_human_size());
              match action {
                  Action::Explain => {
+                     new_size -= candidate.size;
                      println!("Deleting (or moving) \"{}\" would free {}", path, size);
                  },
                  Action::Delete => {
-                     println!("Deleting \"{}\" to free {}", path, size);
-                     std::fs::remove_dir_all(path);
+                     match std::fs::remove_dir_all(&path) {
+                         Ok(()) => {
+                             new_size -= candidate.size;
+                             println!("Deleted \"{}\" to free {}", &path, size);
+                         }
+                         Err(e) => {
+                             eprintln!("Deletion of \"{}\" failed, ERROR = ", e);
+                         }
+                     }
                  },
                  Action::Move => {
                      let mut dest_path = PathBuf::from_str(target_dir.expect("missing target folder?")).expect("invalid target folder");
@@ -147,7 +152,6 @@ fn process(backupsFolder : &BackupsFolder, max_size : u64, action : Action, targ
             if verbose {
                 println!("New folder state: {}", new_folder_state);
             }
-            new_size -= candidate.size;
             if new_size <= max_size {
                 println!("New cumulated size of all backup files : {}", new_size.to_human_size());
                 break;

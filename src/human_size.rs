@@ -1,5 +1,4 @@
 use regex::Regex;
-use lazy_static::lazy;
 use std::str::FromStr;
 
 pub trait HumanSize : Sized {
@@ -25,9 +24,9 @@ impl HumanSize for u64 {
 
     fn from_human_size(s : &str) -> Option<u64> {
         lazy_static! {
-            static ref re : Regex = Regex::new(r"(?P<val>[0-9]+)\w*(?P<unit>[a-zA-Z])").unwrap();
+            static ref RE : Regex = Regex::new(r"(?P<val>[0-9]+)\w*(?P<unit>[a-zA-Z])").unwrap();
         }
-        match re.captures(s) {
+        match RE.captures(s) {
             Some(caps) => {
                 let val = u64::from_str(&caps["val"]).unwrap();
                 match String::from_str(&caps["unit"]).unwrap().to_lowercase().as_str() {

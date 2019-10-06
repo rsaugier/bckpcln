@@ -1,10 +1,9 @@
 use std::path::{Path, PathBuf};
-use std::{fs, io, error, cmp};
+use std::{fs, error, cmp};
 use std::fmt::{Display, Formatter, Error, Debug};
 use std::ffi::OsStr;
-use std::cmp::{Ordering, Reverse};
 use chrono;
-use chrono::{DateTime, Utc, Local, TimeZone, ParseError, Duration};
+use chrono::{DateTime, Utc, TimeZone, Duration};
 use crate::human_size::*;
 
 pub type Result<T> = std::result::Result<T, Box<dyn error::Error>>;
@@ -126,7 +125,7 @@ fn creation_date_from_filename(path : &PathBuf) -> Result<DateTime<Utc>> {
     let filename = path.file_name().unwrap();
     match Utc.datetime_from_str(&filename.to_string_lossy(), "%F_%H%M_%S") {
         Ok(date) => return Ok(date),
-        Err(e) => simple_error::bail!("cannot parse date from this file name: {}", path.to_string_lossy())
+        Err(_) => simple_error::bail!("cannot parse date from this file name: {}", path.to_string_lossy())
     }
 }
 
@@ -151,20 +150,20 @@ impl Display for Backup {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> std::result::Result<(), Error> {
         Display::fmt(&self.date, f)?;
-        write!(f, " : ");
+        write!(f, " : ")?;
         Debug::fmt(&self.path.file_name().unwrap(), f)?;
-        write!(f, " isolation=");
+        write!(f, " isolation=")?;
         if self.isolation == Duration::max_value() {
-            write!(f, "max");
+            write!(f, "max")?;
         }
         else {
             write!(f, "({:>05}.{:02}:{:02}:{:02})",
                    self.isolation.num_days(),
                    self.isolation.num_hours() % 24,
                    self.isolation.num_minutes() % 60,
-                   self.isolation.num_seconds() % 60);
+                   self.isolation.num_seconds() % 60)?;
         }
-        write!(f, " size={}", self.size.to_human_size());
+        write!(f, " size={}", self.size.to_human_size())?;
         Ok(())
     }
 }
@@ -172,11 +171,11 @@ impl Display for Backup {
 impl Display for BackupsFolder {
 
     fn fmt(&self, f: &mut Formatter<'_>) -> std::result::Result<(), Error> {
-        writeln!(f, "\"{}\" [", self.path.display());
+        writeln!(f, "\"{}\" [", self.path.display())?;
         for backup in self.backups.iter() {
-            writeln!(f, "    {}", backup);
+            writeln!(f, "    {}", backup)?;
         }
-        writeln!(f, "]");
+        writeln!(f, "]")?;
         Ok(())
     }
 }
