@@ -14,7 +14,7 @@ use crate::backups::BackupsFolder;
 use crate::human_size::*;
 
 static PROGRAM_NAME : &str = "bckpcln";
-static PROGRAM_VERSION : &str = "1.0";
+static PROGRAM_VERSION : &str = "0.2";
 
 enum Action {
     Explain,

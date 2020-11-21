@@ -1,4 +1,10 @@
-# bckpcln
+# bckpcln reference doc
+
+#### Version / Disclaimer
+
+**bckpcln vesion 0.2** is still early WIP, although I use it everyday on my personal server and *it seems to work*. 
+
+## Description
 
 #### Summary
 
@@ -67,3 +73,62 @@ The "usefulness" criteria for a backup are the following:
 - The backup is recent.
 
 The first criterium has a higher priority than the second.
+
+## Running bckpcln
+
+The best way to learn about **bckpcln** is to run it. It won't delete anything without being passed the right arguments.
+You can run this command to learn about its usage:
+
+```
+> bckpcln --help
+
+USAGE:
+    bckpcln [FLAGS] [OPTIONS] --max-size <MAX_SIZE>
+
+FLAGS:
+        --delete     Perform the actual deletion
+    -f, --force      Forces the deletion without prompting
+    -h, --help       Prints help information
+    -l, --list       List all the backups and their properties
+    -V, --version    Prints version information
+    -v, --verbose    Print more details
+
+OPTIONS:
+    -d, --directory <BACKUP_DIR>    The directory to process. Default is current working directory.
+    -m, --max-size <MAX_SIZE>       Defines the maximum accepted size of the backup folder. Supports standard units.
+                                    Examples: 5k, 10M, 6G
+        --move <TARGET_FOLDER>      Perform a move (instead of delete) to the specified target folder
+```
+
+## Simple example
+
+Assuming your backups are stored in /mnt/foo/backups, and the max total size you want to allow them is 50GB,
+you can run this command: 
+```
+> bckpcln -d /mnt/foo/backups -m 50G
+
+Backup directory to clean up: /mnt/foo/backups
+Max size: 75 GiB
+Perform delete: No, just explain
+Cumulated size of all backup files: 52 GiB
+Cumulated backups size is higher than the max size - cleanup is needed!
+Deleting (or moving) "/mnt/foo/backups/sys425123.bak" would free 1 GiB
+Deleting (or moving) "/mnt/foo/backups/sys423456.bak" would free 1 GiB
+New cumulated size of all backup files : 49 GiB
+```
+
+**bckpcln** will show you the file it intends to delete, and the space you would regain.
+But nothing gets deteled - by default, it's a *dry run!*
+
+When you're ready to actually delete the files, simply add the --delete flag to **actually delete the files**:
+
+```
+> bckpcln -d /mnt/foo/backups -m 50G --delete
+```
+
+You also have the option to move the files to another directory, instead of deleting them:
+
+```
+> bckpcln -d /mnt/foo/backups -m 50G --move /mnt/bar/archive
+```
+
